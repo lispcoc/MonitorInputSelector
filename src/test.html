@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <div id="display">0</div>
+    <button onclick="getCapabilities()">Reflesh</button>
+    <button onclick="test2({cmd: 'getVpc', index: 0x60})">2</button>
+
+    <script>
+        var mailbox = 0;
+
+        function test2(arg) {
+            external.invoke(JSON.stringify(arg));
+            document.getElementById('display').innerHTML = mailbox;
+        }
+
+        function debug(text) {
+            var json = {
+                cmd: 'Test',
+                text: text
+            };
+            var ret = external.invoke(JSON.stringify(json));
+        }
+
+        function setVpc(display, vcp, value) {
+            var json = {
+                cmd: 'setVpc',
+                display: display,
+                vcp: vcp,
+                value: value,
+            };
+            var ret = external.invoke(JSON.stringify(json));
+        }
+
+        function getCapabilities() {
+            var json = {
+                cmd: 'getCapabilities',
+                callback: 'getCapabilitiesCallback'
+            };
+            var ret = external.invoke(JSON.stringify(json));
+        }
+
+        function getCapabilitiesCallback(str_array) {
+            document.getElementById('display').innerHTML = "aaa";
+        }
+
+        function getCapabilitiesCallback_(str_array) {
+            document.getElementById('display').innerHTML = "aaa";
+            document.getElementById('display').innerHTML = JSON.stringify(str_array);
+            debug(str_array);
+            var html = "";
+            for (var str of str_array) {
+                var monitor_name = searchCapability(str, "model", "Unknown");
+                var vcp = searchCapability(str, "vcp", "");
+                var inputs = searchCapability(vcp, "60", "");
+                var buttons = generateButtons(inputs);
+                html += monitor_name + " " + buttons;
+            }
+            document.getElementById('display').innerHTML = html;
+        }
+
+        function generateButtons(inputs) {
+            var ret = "";
+            var inputs_array = inputs.split(' ');
+            for (var input of inputs_array) {
+                ret += '<button onclick="setVpc(0, 0x60, ' + parseInt(input, 16) + ')">' + input + '</button>';
+            }
+            return ret;
+        }
+
+        function searchCapability(str, key, ret) {
+            // search monitor
+            var indexOfFirst = str.indexOf(key);
+            var open_bracket = 0;
+            var retFirst = -1;
+            if (indexOfFirst != -1) {
+                for (var i = indexOfFirst; i < str.length; ++i) {
+                    if (str.charAt(i) === '(') {
+                        if (open_bracket == 0) {
+                            retFirst = i + 1;
+                        }
+                        open_bracket++;
+                    }
+                    if (str.charAt(i) === ')') {
+                        open_bracket--;
+                        if (open_bracket == 0) {
+                            ret = str.slice(retFirst, i);
+                            break;
+                        }
+                    }
+                }
+            }
+            return ret;
+        }
+
+        function update_mailbox(mail) {
+            mailbox = mail;
+        }
+    </script>
+</body>
+
+</html>
